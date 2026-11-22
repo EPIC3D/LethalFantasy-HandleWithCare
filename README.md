@@ -19,10 +19,20 @@ game. Handle with care.
 | …and do it again | Closes the game |
 
 - **Expressions** use the game's own dialogue-portrait faces, shown on the 3D model.
-- **Lines** are existing game lines, picked per character: playful Akipo,
-  bratty Red, composed Blue. They appear in the normal dialogue box in your
-  game language, and are voiced if
+- **Lines** are existing game lines, picked per character. They appear in the
+  normal dialogue box in your game language, and are voiced if
   [LethalFantasy-TTS](https://github.com/EPIC3D/LethalFantasy-TTS) is installed.
+- **Each character has her own personality:**
+
+  | | Akipo – young, innocent, shy | Red – extroverted, vain, flirty | Blue – introverted |
+  | --- | --- | --- | --- |
+  | Face pokes | Normal patience | Barely bothers her | Wears her patience thin faster |
+  | Chest pokes | Very embarrassed, annoyed quickly | Teasing and smug for a long time; when she is fond of you, she enjoys it | Startled, then coldly annoyed |
+  | Headpats | Work best | Work | Shy, work less |
+
+- **Affection** – the game's own affection progress – makes everyone more
+  patient: at full affection a poke annoys her half as much and she calms down
+  twice as fast.
 - **Sounds** come from the game itself: a chest poke plays the cauldron's
   "bloop", a headpat a soft grass rustle. The cauldron sound only loads after
   you have played a level once – the first time you return to the lobby, the
@@ -69,10 +79,13 @@ Everything can be tuned in `<LethalFantasy>\BepInEx\config\com.epicopy.lfpoke.cf
 | Mood | `CalmDownDelay` / `CalmDownPerSecond` | `2.5` / `1.0` | How fast she forgives you |
 | Chest | `BreastRadius`, `ScreenLeftBreastX/Y`, `ScreenRightBreastX/Y` | – | Chest zones, relative to the chest bone |
 | Chest | `CleavageTop/BottomX/Y`, `TopLineLeft/RightX/Y` | – | Left/right split and the upper limit of the chest zones |
-| Chest | `AnnoyancePerPoke` | `2` | One chest poke counts as this many face pokes |
+| Chest | `AnnoyancePerPoke` | `2` | Chest poke strength; scales each character's own value (`2` = as designed) |
 | Chest | `JiggleForce` | `120` | Physics push strength (game footsteps use 150-225), `0` = off |
 | Headpat | `OffsetX/Y`, `HalfWidth/HalfHeight` | – | Headpat oval above the face |
-| Headpat | `CalmPerPat` | `3` | How much one pat calms her |
+| Headpat | `CalmPerPat` | `3` | How much a pat calms her; scales each character's own value (`3` = as designed) |
+| Personality | `AffectionPatience` | `1.0` | How much affection increases patience, `0` = ignore affection |
+| Personality | `FondAffection` | `0.8` | Affection (0..1) from which Red enjoys chest pokes |
+| Personality | `AffectionOverrideAkipo/Red/Blue` | `-1` | Test value for affection (0..1), `-1` = the game's real value |
 | Talk | `Enabled` / `Chance` / `CooldownSeconds` | `true` / `0.35` / `3` | How often she answers (a mood change always talks) |
 | Drop | `MadPokesBeforeDrop` | `3` | Pokes while mad before she puts you down |
 | Drop | `QuitGame` / `DropsBeforeQuit` | `true` / `2` | Close the game on the second drop (`false` to disable) |
@@ -112,6 +125,7 @@ You can also pass the path directly:
 ```
 src/LFPoke/Plugin.cs        Zones, moods, reactions, jiggle, drop/quit, sounds
 src/LFPoke/Lines.cs         Dialogue line keys per character and mood
+src/LFPoke/Personality.cs   Per-character tolerance and the game's affection
 src/LFPoke/ClipRecorder.cs  Records the cauldron sound once to a local WAV file
 src/LFPoke/Wav.cs           WAV writer
 ```

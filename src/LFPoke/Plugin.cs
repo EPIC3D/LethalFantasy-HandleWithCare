@@ -17,7 +17,7 @@ namespace LFPoke
     /// Lobby fun: while a giantess holds the player in the lobby (level select) and follows the mouse,
     /// clicking her face makes her react, getting more annoyed with every poke (Warcraft 2 style).
     /// </summary>
-    [BepInPlugin("com.epicopy.lfpoke", "Handle With Care", "0.1.0")]
+    [BepInPlugin("com.epicopy.lfpoke", "Handle With Care", "0.2.0")]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log;
@@ -51,6 +51,7 @@ namespace LFPoke
         private ConfigEntry<bool> _chestEnabled, _headEnabled;
         private ConfigEntry<float> _breastRadius, _breastLX, _breastLY, _breastRX, _breastRY, _chestAnnoyance, _jiggleForce;
         private ConfigEntry<float> _headX, _headY, _headW, _headH, _patCalm;
+        private ConfigEntry<float> _affPatience, _fondAt, _affAkipo, _affRed, _affBlue;
         private ConfigEntry<float> _cleavTopX, _cleavTopY, _cleavBotX, _cleavBotY;
         private ConfigEntry<float> _topLX, _topLY, _topRX, _topRY;
         private ConfigEntry<bool> _talk, _dropEnabled, _quitEnabled;
@@ -71,6 +72,7 @@ namespace LFPoke
             public float clearAt;
             public bool showing;
             public int madPokes;
+            public float affection;
         }
 
         private readonly Dictionary<Giantess, Mood> _moods = new Dictionary<Giantess, Mood>();
@@ -84,8 +86,7 @@ namespace LFPoke
             ("frown eyes",  "frown mouth"),   // 3: "stop it"
             ("mad eyes",    "mad mouth"),     // 4: angry, darkened eyes (portrait "Angry")
         };
-        // Chest level 1 is the stronger blush.
-        private static readonly (string eye, string mouth) ChestFlustered = ("embarrased eyes", "embarrased mouth");
+
 
         private int[] _levelAt = { 0, 3, 6, 10, 15 };
         private readonly Dictionary<int, List<AudioClip>> _clips = new Dictionary<int, List<AudioClip>>();
@@ -133,6 +134,11 @@ namespace LFPoke
             _dropAfter = Config.Bind("Drop", "MadPokesBeforeDrop", 3, "Pokes while she is mad before she puts you down.");
             _quitEnabled = Config.Bind("Drop", "QuitGame", true, "After enough drops she closes the game.");
             _quitAfter = Config.Bind("Drop", "DropsBeforeQuit", 2, "Drop number that closes the game instead (counted per game session).");
+            _affPatience = Config.Bind("Personality", "AffectionPatience", 1f, "How much the game's affection makes her more patient: annoyance per poke is divided by (1 + this x affection), calming is multiplied by it. 0 = ignore affection.");
+            _fondAt = Config.Bind("Personality", "FondAffection", 0.8f, "Affection (0..1) from which Red enjoys chest pokes instead of getting annoyed.");
+            _affAkipo = Config.Bind("Personality", "AffectionOverrideAkipo", -1f, "Test override for Akipo's affection (0..1). -1 = use the game's real value.");
+            _affRed = Config.Bind("Personality", "AffectionOverrideRed", -1f, "Test override for Red's affection (0..1). -1 = use the game's real value.");
+            _affBlue = Config.Bind("Personality", "AffectionOverrideBlue", -1f, "Test override for Blue's affection (0..1). -1 = use the game's real value.");
             _headEnabled = Config.Bind("Headpat", "Enabled", true, "Click the top of her head for a headpat: she gets happy and calms down.");
             _headX = Config.Bind("Headpat", "OffsetX", -0.01f, "Oval centre relative to the face centre (fraction of screen height, + = right).");
             _headY = Config.Bind("Headpat", "OffsetY", 0.253f, "(+ = up)");
@@ -179,7 +185,7 @@ namespace LFPoke
                 if (g == null) { _moods.Remove(g); continue; }
                 if (m.showing && (now >= m.clearAt || !Active.ContainsKey(g))) ClearFace(g, m);
                 if (now - m.lastPoke > _calmDelay.Value)
-                    m.annoyance = Mathf.Max(0f, m.annoyance - _calmPerSecond.Value * Time.deltaTime);
+                    m.annoyance = Mathf.Max(0f, m.annoyance - _calmPerSecond.Value * (1f + _affPatience.Value * m.affection) * Time.deltaTime);
             }
 
             if (_debug.Value && Input.GetKeyDown(KeyCode.F9)) DumpAllClips();
@@ -334,17 +340,29 @@ namespace LFPoke
             return c.transform.position;
         }
 
-        // Chest pokes skip the friendly stage: flustered -> serious -> angry.
-        private static readonly int[] ChestLevels = { 1, 1, 3, 3, 4 };
 
         private void Poke(Giantess g, bool chest)
         {
             if (!_moods.TryGetValue(g, out var m)) _moods[g] = m = new Mood();
-            m.annoyance = Mathf.Min(m.annoyance + (chest ? _chestAnnoyance.Value : 1f), _levelAt[_levelAt.Length - 1] + 3f);
+            var ch = g.dialogue != null ? g.dialogue.character : CharacterType.None;
+            var pers = Personality.For(ch);
+            m.affection = AffectionOf(ch);
             m.lastPoke = Time.time;
+
+            // Red, when fond of you: chest pokes please her instead of annoying her.
+            if (chest && pers.likesChestWhenFond && m.affection >= _fondAt.Value)
+            {
+                ChestLiked(g, m);
+                return;
+            }
+
+            float gain = (chest ? pers.chestPerPoke * (_chestAnnoyance.Value / 2f) : pers.facePerPoke) / (1f + _affPatience.Value * m.affection);
+            m.annoyance = Mathf.Min(m.annoyance + gain, _levelAt[_levelAt.Length - 1] + 3f);
             int lvl = LevelOf(m.annoyance);
-            if (chest) lvl = ChestLevels[lvl];
-            var (eye, mouth) = chest && lvl == 1 ? ChestFlustered : Reactions[lvl];
+            if (chest) lvl = pers.chestLevels[lvl];
+            var (eye, mouth) = Reactions[lvl];
+            if (chest && lvl == 1 && pers.chestFace1.HasValue) (eye, mouth) = pers.chestFace1.Value;
+            if (chest && lvl == 2 && pers.chestFace2.HasValue) (eye, mouth) = pers.chestFace2.Value;
 
             var em = g.expressionManager;
             em.eyeOverride.SetEvent(eye);
@@ -373,13 +391,37 @@ namespace LFPoke
             var ls = Lines.For(g.dialogue != null ? g.dialogue.character : CharacterType.None);
             Lines.Line[] set = ls == null ? null : chest ? (ls.Chest.TryGetValue(lvl, out var cs) ? cs : null) : ls.Face[lvl];
             Say(g, set, changed);
-            Log.LogInfo($"[Poke] {g.dialogue?.character} {(chest ? "chest" : "face")} annoyance={m.annoyance:F1} level={lvl} ({eye}/{mouth})");
+            Log.LogInfo($"[Poke] {g.dialogue?.character} {(chest ? "chest" : "face")} affection={m.affection:F2} annoyance={m.annoyance:F1} level={lvl} ({eye}/{mouth})");
+        }
+
+        private float AffectionOf(CharacterType ch)
+        {
+            float o = ch == CharacterType.Akipo ? _affAkipo.Value : ch == CharacterType.RedTwin ? _affRed.Value : ch == CharacterType.BlueTwin ? _affBlue.Value : -1f;
+            return o >= 0f ? Mathf.Clamp01(o) : Personality.Affection(ch);
+        }
+
+        private void ChestLiked(Giantess g, Mood m)
+        {
+            m.annoyance = Mathf.Max(0f, m.annoyance - 1f);
+            m.madPokes = 0;
+            var em = g.expressionManager;
+            bool glow = UnityEngine.Random.value < 0.5f;
+            em.eyeOverride.SetEvent(glow ? "happy eyes" : "smug eyes");
+            em.mouthOverride.SetEvent(glow ? "smile mouth" : "smug mouth");
+            m.showing = true;
+            m.clearAt = Time.time + _reactionSeconds.Value * 1.5f;
+            if (HasClips(BoobKey)) PlayTouch(BoobKey, _boobSound.Value);
+            _lastLevel[g] = -2;
+            var ls = Lines.For(g.dialogue.character);
+            if (ls?.ChestLiked != null) Say(g, ls.ChestLiked, false);
+            Log.LogInfo($"[Poke] {g.dialogue?.character} chest (liked) affection={m.affection:F2} annoyance={m.annoyance:F1}");
         }
 
         private void HeadPat(Giantess g)
         {
             if (!_moods.TryGetValue(g, out var m)) _moods[g] = m = new Mood();
-            m.annoyance = Mathf.Max(0f, m.annoyance - _patCalm.Value);
+            var pp = Personality.For(g.dialogue != null ? g.dialogue.character : CharacterType.None);
+            m.annoyance = Mathf.Max(0f, m.annoyance - pp.patCalm * (_patCalm.Value / 3f));
             int lvl = LevelOf(m.annoyance);
             // Still quite annoyed -> grudging blush; otherwise happy.
             var (eye, mouth) = lvl >= 3 ? ("shy eyes", "shy mouth") : ("happy eyes", "happy mouth");
