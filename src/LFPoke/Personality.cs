@@ -16,29 +16,64 @@ namespace LFPoke
         public (string eye, string mouth)? chestFace1;  // face for chest level 1 (null = mood face)
         public (string eye, string mouth)? chestFace2;  // face for chest level 2
         public bool likesChestWhenFond;                 // high affection: chest pokes please her (Red)
+        public int[] faceLevels = { 0, 1, 2, 3, 4 };    // mood level -> face reaction level
+        public int[] buttLevels = { 1, 2, 3, 4, 4 };    // mood level -> butt reaction level
+        public float buttGain = 3f;                     // annoyance per butt pinch
+        public bool buttFlirty;                         // level 2 = flirty (Red, briefly)
+        public bool affectionOnlyAtMax;                 // affection changes nothing until it is maxed out (Blue)
+        public Personality whenMaxed;                   // softer personality at max affection
+        public float tickleGain = 0.5f;                 // annoyance per tickle (soles, tummy)
+        public int tickleAnnoyedAt = 3;                 // mood level from which tickling stops being funny
 
         internal static readonly Personality Akipo = new Personality
         {
-            facePerPoke = 1f, chestPerPoke = 2.5f, patCalm = 4f,
+            // Neutral (0) on the tolerance scale.
+            facePerPoke = 1f, chestPerPoke = 2f, patCalm = 3f,
             chestFace1 = ("embarrased eyes", "embarrased mouth"),
         };
 
         // Flirty: chest pokes stay smug/teasing for a long time.
         internal static readonly Personality Red = new Personality
         {
-            facePerPoke = 0.6f, chestPerPoke = 1f, patCalm = 3f,
+            // +1: tolerant and forgiving.
+            facePerPoke = 0.6f, chestPerPoke = 1f, patCalm = 4f,
+            tickleGain = 0.3f, tickleAnnoyedAt = 4,
             chestLevels = new[] { 2, 2, 2, 3, 4 },
             chestFace2 = ("smug eyes", "smug mouth"),
             likesChestWhenFond = true,
+            buttLevels = new[] { 2, 2, 3, 4, 4 }, buttGain = 2f, buttFlirty = true,   // flirty, but only briefly
+        };
+
+        // Blue at max affection: she lets you closer – giggles sometimes, tolerates a little tickling.
+        private static readonly Personality BlueMaxed = new Personality
+        {
+            facePerPoke = 1.3f, chestPerPoke = 2f, patCalm = 4f,
+            faceLevels = new[] { 0, 1, 2, 3, 4 },
+            tickleGain = 1.5f, tickleAnnoyedAt = 2,
+            buttGain = 3f,
+            chestFace1 = ("shock eyes", "shy mouth"),
         };
 
         internal static readonly Personality Blue = new Personality
         {
-            facePerPoke = 1.3f, chestPerPoke = 2f, patCalm = 2f,
+            affectionOnlyAtMax = true,
+            whenMaxed = BlueMaxed,
+            // -1: Blue doesn't like being touched anywhere – only headpats.
+            facePerPoke = 1.8f, chestPerPoke = 3f, patCalm = 4f,
+            faceLevels = new[] { 1, 2, 3, 4, 4 },          // never giggles at a poke
+            tickleGain = 2f, tickleAnnoyedAt = 0,           // tickling is never funny to her
+            buttGain = 4f,
             chestFace1 = ("shock eyes", "shy mouth"),
         };
 
         internal static readonly Personality Default = new Personality();
+
+        /// <summary>The personality in effect for this affection (0..1).</summary>
+        internal static Personality For(CharacterType c, float affection)
+        {
+            var p = For(c);
+            return p.whenMaxed != null && affection >= 0.999f ? p.whenMaxed : p;
+        }
 
         internal static Personality For(CharacterType c)
         {

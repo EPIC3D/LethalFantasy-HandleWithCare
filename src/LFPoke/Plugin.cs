@@ -17,7 +17,7 @@ namespace LFPoke
     /// Lobby fun: while a giantess holds the player in the lobby (level select) and follows the mouse,
     /// clicking her face makes her react, getting more annoyed with every poke (Warcraft 2 style).
     /// </summary>
-    [BepInPlugin("com.epicopy.lfpoke", "Handle With Care", "0.2.0")]
+    [BepInPlugin("com.epicopy.lfpoke", "Handle With Care", "0.3.0")]
     public class Plugin : BaseUnityPlugin
     {
         internal static ManualLogSource Log;
@@ -46,20 +46,24 @@ namespace LFPoke
 
 
         private ConfigEntry<bool> _enabled, _checkUI, _debug;
-        private ConfigEntry<float> _hitRadius, _reactionSeconds, _calmDelay, _calmPerSecond, _volume;
+        private ConfigEntry<float> _reactionSeconds, _calmDelay, _calmPerSecond, _volume;
         private ConfigEntry<string> _thresholds;
         private ConfigEntry<bool> _chestEnabled, _headEnabled;
-        private ConfigEntry<float> _breastRadius, _breastLX, _breastLY, _breastRX, _breastRY, _chestAnnoyance, _jiggleForce;
-        private ConfigEntry<float> _headX, _headY, _headW, _headH, _patCalm;
+        private ConfigEntry<float> _chestAnnoyance, _jiggleForce;
+        private ConfigEntry<float> _patCalm;
         private ConfigEntry<float> _affPatience, _fondAt, _affAkipo, _affRed, _affBlue;
-        private ConfigEntry<float> _cleavTopX, _cleavTopY, _cleavBotX, _cleavBotY;
-        private ConfigEntry<float> _topLX, _topLY, _topRX, _topRY;
+        private ConfigEntry<bool> _feetEnabled, _freeEnabled;
+        private ConfigEntry<float> _reach;
+        private ConfigEntry<int> _pickupLevel;
+        private ConfigEntry<float> _breastShare, _eyeSize, _mouthSize;
+        private ConfigEntry<bool> _talkHidden;
         private ConfigEntry<bool> _talk, _dropEnabled, _quitEnabled;
         private ConfigEntry<int> _dropAfter, _quitAfter;
         private static int _drops;          // survives the lobby reload (runner is DontDestroyOnLoad)
         private bool _dropping;
         private ConfigEntry<float> _talkChance, _talkCooldown, _touchVolume;
-        private ConfigEntry<string> _pokeSound, _patSound, _boobSound;
+        private ConfigEntry<string> _pokeSound, _patSound, _boobSound, _footSound, _shoeSound, _glassSound;
+        private ConfigEntry<float> _quitDelay;
         private float _nextTalk;
         private readonly Dictionary<Giantess, int> _lastLevel = new Dictionary<Giantess, int>();
 
@@ -100,7 +104,6 @@ namespace LFPoke
             var Config = Plugin.Cfg;
             _enabled = Config.Bind("General", "Enabled", true, "Click the giantess' face in the lobby to tease her.");
             _checkUI = Config.Bind("General", "IgnoreClicksOnUI", true, "Ignore clicks that land on a UI element (buttons, level list).");
-            _hitRadius = Config.Bind("General", "FaceRadius", 1.0f, "Size multiplier of the clickable face area.");
             _reactionSeconds = Config.Bind("Mood", "ReactionSeconds", 1.4f, "How long a reaction face is held after a poke.");
             _thresholds = Config.Bind("Mood", "LevelThresholds", "0,3,6,10,15", "Poke count where each of the 5 levels starts (giggle, flustered, smug, serious, angry).");
             _calmDelay = Config.Bind("Mood", "CalmDownDelay", 2.5f, "Seconds without pokes before she starts calming down.");
@@ -108,27 +111,19 @@ namespace LFPoke
             _volume = Config.Bind("Sound", "Volume", 0.8f, "Volume of the reaction sounds (sounds/level0..level4/*.ogg|wav).");
             _debug = Config.Bind("Debug", "LogClicks", false, "Log every click with distance to the face (for tuning).");
             _chestEnabled = Config.Bind("Chest", "Enabled", true, "Breast targets (reactions: flustered -> serious -> angry, plus jiggle).");
-            _breastRadius = Config.Bind("Chest", "BreastRadius", 0.14f, "Clickable radius of each breast, fraction of screen height.");
-            _breastLX = Config.Bind("Chest", "ScreenLeftBreastX", -0.006f, "Screen-left breast centre relative to the chest bone (fraction of screen height, + = right).");
-            _breastLY = Config.Bind("Chest", "ScreenLeftBreastY", 0.026f, "(+ = up)");
-            _breastRX = Config.Bind("Chest", "ScreenRightBreastX", 0.175f, "Screen-right breast centre relative to the chest bone (+ = right).");
-            _breastRY = Config.Bind("Chest", "ScreenRightBreastY", 0.02f, "(+ = up)");
             _chestAnnoyance = Config.Bind("Chest", "AnnoyancePerPoke", 2f, "How much one breast poke annoys her (face poke = 1).");
             _jiggleForce = Config.Bind("Chest", "JiggleForce", 120f, "Physics push on a breast poke (game footsteps use 150-225). 0 = off.");
-            _cleavTopX = Config.Bind("Chest", "CleavageTopX", 0.078f, "Cleavage line top point relative to the chest bone (fraction of screen height, + = right). Clicks left of the line = screen-left breast.");
-            _cleavTopY = Config.Bind("Chest", "CleavageTopY", 0.117f, "(+ = up)");
-            _cleavBotX = Config.Bind("Chest", "CleavageBottomX", 0.227f, "Cleavage line bottom point relative to the chest bone (+ = right).");
-            _cleavBotY = Config.Bind("Chest", "CleavageBottomY", -0.078f, "(+ = up)");
-            _topLX = Config.Bind("Chest", "TopLineLeftX", -0.197f, "Upper limit of the breast zones: left point relative to the chest bone (fraction of screen height). No breast hits above this line.");
-            _topLY = Config.Bind("Chest", "TopLineLeftY", 0.099f, "(+ = up)");
-            _topRX = Config.Bind("Chest", "TopLineRightX", 0.30f, "Upper limit: right point relative to the chest bone.");
-            _topRY = Config.Bind("Chest", "TopLineRightY", 0.141f, "(+ = up)");
             _talk = Config.Bind("Talk", "Enabled", true, "Akipo answers with existing game lines (shown as dialogue; voiced if LFTTS is installed).");
+            _talkHidden = Config.Bind("Talk", "WhenUIHidden", true, "Also talk when the game UI (dialogue box) is hidden. Off by default: the text can't be seen then, only its start sound is heard.");
             _talkChance = Config.Bind("Talk", "Chance", 0.35f, "Chance to say a line on a poke when her mood level did not change (a level change always talks).");
             _talkCooldown = Config.Bind("Talk", "CooldownSeconds", 3f, "Minimum time between two lines.");
-            _pokeSound = Config.Bind("Sound", "TouchSound4", "", "Sound on a face poke: empty = none, Boop (built-in), UIReject (anvil), a game SoundType name (e.g. ItemPaperGrab, UIAccept), or empty = none. Files in sounds/touch override it.");
+            _pokeSound = Config.Bind("Sound", "FaceSound", "ItemNatureGrab", "Sound on a face poke: ItemNatureGrab (picking up regular food), empty = none, Boop (built-in), UIReject (anvil), a game SoundType name (e.g. ItemPaperGrab, UIAccept), or empty = none. Files in sounds/touch override it.");
             _patSound = Config.Bind("Sound", "HeadpatSound3", "PlayerStepGrass", "Sound on a headpat: PlayerStepGrass (soft grass rustle), Pat (built-in), a game SoundType name, or empty. Files in sounds/pat override it.");
             _boobSound = Config.Bind("Sound", "BreastSound", "Cauldron", "Sound on a breast poke: Cauldron (the cauldron 'bloop', captured the first time you see a cauldron in a level and saved to sounds/boob), Boop, a game SoundType name, or empty = use TouchSound3.");
+            _footSound = Config.Bind("Sound", "FootSound", "ItemMeatGrap", "Sound on touching her legs/soles: ItemMeatGrap (picking up heavy food), a game SoundType name, Boop, or empty. Files in sounds/foot override it.");
+            _shoeSound = Config.Bind("Sound", "ShoeSound", "PlayerStepWalkway", "Sound when you touch her shoe (the shoe blocks the tickle): PlayerStepWalkway (gravel path step), a game SoundType name, or empty.");
+            _glassSound = Config.Bind("Sound", "GlassesSound", "ItemGlassGrab", "Sound when you poke her glasses (they protect her eyes): a game SoundType name or empty.");
+            _quitDelay = Config.Bind("Drop", "QuitDelaySeconds", 2.5f, "Extra seconds after her last line before the game closes.");
             _touchVolume = Config.Bind("Sound", "TouchVolume", 0.6f, "Volume of the touch sound.");
             _dropEnabled = Config.Bind("Drop", "Enabled", true, "When she is mad and you keep poking, she puts you down (reloads the lobby, like the pause menu's Lobby button).");
             _dropAfter = Config.Bind("Drop", "MadPokesBeforeDrop", 3, "Pokes while she is mad before she puts you down.");
@@ -139,11 +134,16 @@ namespace LFPoke
             _affAkipo = Config.Bind("Personality", "AffectionOverrideAkipo", -1f, "Test override for Akipo's affection (0..1). -1 = use the game's real value.");
             _affRed = Config.Bind("Personality", "AffectionOverrideRed", -1f, "Test override for Red's affection (0..1). -1 = use the game's real value.");
             _affBlue = Config.Bind("Personality", "AffectionOverrideBlue", -1f, "Test override for Blue's affection (0..1). -1 = use the game's real value.");
+            _breastShare = Config.Bind("Chest", "BreastBoneShare", 0.3f, "How much the breast physics bones must move a spot for it to count as the breast (0..1). Higher = smaller breast area.");
+            MeshPick.BreastShare = _breastShare.Value;
+            _eyeSize = Config.Bind("Face", "EyeSize", 0.3f, "Size of each eye zone, relative to the distance between her eyes.");
+            _mouthSize = Config.Bind("Face", "MouthSize", 0.45f, "Size of the mouth zone, relative to the distance between her eyes.");
+            MeshPick.EyeSize = _eyeSize.Value; MeshPick.MouthSize = _mouthSize.Value;
+            _freeEnabled = Config.Bind("Free", "Enabled", true, "In the lobby, when nobody holds you: poke any character within arm's reach.");
+            _reach = Config.Bind("Free", "Reach", 0.75f, "Arm's reach in world units (from your camera to the touched spot). LogClicks shows the measured distance.");
+            _pickupLevel = Config.Bind("Free", "PickupAtLevel", 3, "Free roam: when your teasing gets her to this mood level (0 giggle .. 4 mad), she picks you up.");
+            _feetEnabled = Config.Bind("Feet", "Enabled", true, "Akipo: click her soles to tickle her (e.g. in the footwear view).");
             _headEnabled = Config.Bind("Headpat", "Enabled", true, "Click the top of her head for a headpat: she gets happy and calms down.");
-            _headX = Config.Bind("Headpat", "OffsetX", -0.01f, "Oval centre relative to the face centre (fraction of screen height, + = right).");
-            _headY = Config.Bind("Headpat", "OffsetY", 0.253f, "(+ = up)");
-            _headW = Config.Bind("Headpat", "HalfWidth", 0.19f, "Oval half width, fraction of screen height.");
-            _headH = Config.Bind("Headpat", "HalfHeight", 0.08f, "Oval half height, fraction of screen height.");
             _patCalm = Config.Bind("Headpat", "CalmPerPat", 3f, "How much annoyance one headpat removes.");
             ParseThresholds();
 
@@ -185,71 +185,210 @@ namespace LFPoke
                 if (g == null) { _moods.Remove(g); continue; }
                 if (m.showing && (now >= m.clearAt || !Active.ContainsKey(g))) ClearFace(g, m);
                 if (now - m.lastPoke > _calmDelay.Value)
-                    m.annoyance = Mathf.Max(0f, m.annoyance - _calmPerSecond.Value * (1f + _affPatience.Value * m.affection) * Time.deltaTime);
+                    m.annoyance = Mathf.Max(0f, m.annoyance - _calmPerSecond.Value * (1f + _affPatience.Value * PatienceAffection(g.dialogue != null ? g.dialogue.character : CharacterType.None, m.affection)) * Time.deltaTime);
             }
 
             if (_debug.Value && Input.GetKeyDown(KeyCode.F9)) DumpAllClips();
+            MarkFreeRoam();
             if (!_enabled.Value || _dropping || !Input.GetMouseButtonDown(0)) return;
             if (Active.Count == 0) { if (_debug.Value) LogDiagnostics(); return; }
 
             Camera cam = Camera.main;
             if (cam == null) return;
-            Vector2 mouse = Input.mousePosition;
+            Vector2 mouse = Cursor.lockState == CursorLockMode.Locked ? new Vector2(Screen.width / 2f, Screen.height / 2f) : (Vector2)Input.mousePosition;
 
-            Giantess best = null; Zone bestZone = Zone.Face; float bestScore = float.MaxValue;
-            float h = Screen.height;
-            void Try(Giantess g, Zone z, Vector2 c, float rx, float ry)
-            {
-                float dx = (mouse.x - c.x) / rx, dy = (mouse.y - c.y) / ry;
-                float score = Mathf.Sqrt(dx * dx + dy * dy);
-                if (_debug.Value) Log.LogInfo($"[Click] {g.dialogue?.character} {z} score={score:F2} mouse={mouse} centre={c}");
-                if (score < bestScore) { bestScore = score; best = g; bestZone = z; }
-            }
+            // Hitbox = the character's own 3D model (see MeshPick).
+            Ray ray = cam.ScreenPointToRay(mouse);
+            Giantess best = null; MeshPick.Hit bestHit = default; bestHit.distance = float.MaxValue;
             foreach (var g in Active.Keys)
+                if (MeshPick.Pick(g, ray, out var h) && h.distance < bestHit.distance) { best = g; bestHit = h; }
+            if (_debug.Value)
+                Log.LogInfo(best == null ? $"[Hit] nothing at {mouse} ({MeshPick.LastDiag}, active={Active.Count})" : $"[Hit] {best.dialogue?.character} part={bestHit.part} mesh={bestHit.renderer} bones={bestHit.bone} | {MeshPick.LastDiag}");
+            if (best == null || bestHit.part == BodyPart.None) return;
+            Plugin_Active.Poses.TryGetValue(best, out Pose pose);
+            if (pose == Pose.Free)
             {
-                if (FaceOnScreen(g, cam, out Vector2 fc, out float fr))
-                {
-                    Try(g, Zone.Face, fc, fr, fr);
-                    if (_headEnabled.Value)
-                        Try(g, Zone.Head, fc + new Vector2(_headX.Value, _headY.Value) * h, _headW.Value * h, _headH.Value * h);
-                }
-                if (_chestEnabled.Value && ChestBoneOnScreen(g, cam, out Vector2 cb))
-                {
-                    float br = _breastRadius.Value * h;
-                    // Nothing above the upper limit line (collarbone area).
-                    Vector2 la = cb + new Vector2(_topLX.Value, _topLY.Value) * h, lb = cb + new Vector2(_topRX.Value, _topRY.Value) * h;
-                    float lt = Mathf.Approximately(la.x, lb.x) ? 0.5f : (mouse.x - la.x) / (lb.x - la.x);
-                    float limitY = Mathf.LerpUnclamped(la.y, lb.y, lt);
-                    if (mouse.y > limitY) { if (_debug.Value) Log.LogInfo($"[Click] above breast limit (y={mouse.y:F0} > {limitY:F0})"); continue; }
-                    Try(g, Zone.BreastLeft, cb + new Vector2(_breastLX.Value, _breastLY.Value) * h, br, br);
-                    Try(g, Zone.BreastRight, cb + new Vector2(_breastRX.Value, _breastRY.Value) * h, br, br);
-                }
+                // Arm's reach: horizontal distance from the player's body, and within the player's
+                // height (so the ground at her feet counts as reachable, not measured from the eyes).
+                Vector3 feet = PlayerDriver.GetPlayerPosition(), eye = PlayerDriver.GetCameraPosition();
+                Vector3 d = bestHit.point - feet;
+                float horiz = new Vector2(d.x, d.z).magnitude;
+                float low = Mathf.Min(feet.y, eye.y) - 0.3f, high = Mathf.Max(feet.y, eye.y) + _reach.Value;
+                bool inReach = horiz <= _reach.Value && bestHit.point.y >= low && bestHit.point.y <= high;
+                if (_debug.Value) Log.LogInfo($"[Hit] free roam: {bestHit.part} horizontal {horiz:F2} height {bestHit.point.y - feet.y:F2} (reach {_reach.Value:F2}) -> {(inReach ? "ok" : "out of reach")}");
+                if (!inReach) return;
             }
-            if (best == null || bestScore > 1f) return;
+            if (bestHit.part == BodyPart.Leg && pose != Pose.Free) return;
+            bool freeRoam = pose == Pose.Free;
+            if (!Allowed(pose, bestHit.part))
+            {
+                if (_debug.Value) Log.LogInfo($"[Hit] {bestHit.part} not available in pose {pose}");
+                return;
+            }
+            if (bestHit.part == BodyPart.Foot && !_feetEnabled.Value) return;
+            // Shoes/boots block the tickle (socks and stockings don't).
+            if (bestHit.part == BodyPart.Foot && (WearsShoes(best) || IsFootwear(bestHit.renderer)))
+            {
+                if (_debug.Value) Log.LogInfo($"[Hit] foot covered ({ShoeName(best)}, mesh {bestHit.renderer}) -> no tickle");
+                if (!(_checkUI.Value && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
+                    PlayGameSound(_shoeSound.Value);
+                return;
+            }
+            if (bestHit.part == BodyPart.Tummy && !_feetEnabled.Value) return;
+            if (bestHit.part == BodyPart.Head && !_headEnabled.Value) return;
+            if ((bestHit.part == BodyPart.BreastLeft || bestHit.part == BodyPart.BreastRight) && !_chestEnabled.Value) return;
 
             if (_checkUI.Value && EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
             {
                 if (_debug.Value) Log.LogInfo("[Click] on target but over UI -> ignored");
                 return;
             }
-            if (bestZone == Zone.Head) { HeadPat(best); return; }
-            bool chest = bestZone != Zone.Face;
-            Poke(best, chest);
-            if (chest)
+            switch (bestHit.part)
             {
-                // Which breast: side of the slanted cleavage line (the front breast curves under to the right).
-                bool left = bestZone == Zone.BreastLeft;
-                if (ChestBoneOnScreen(best, cam, out Vector2 bone))
-                {
-                    Vector2 a = bone + new Vector2(_cleavTopX.Value, _cleavTopY.Value) * h;
-                    Vector2 b = bone + new Vector2(_cleavBotX.Value, _cleavBotY.Value) * h;
-                    float t = Mathf.Approximately(a.y, b.y) ? 0.5f : (mouse.y - a.y) / (b.y - a.y);
-                    float lineX = Mathf.LerpUnclamped(a.x, b.x, t);
-                    left = mouse.x < lineX;
-                    if (_debug.Value) Log.LogInfo($"[Side] mouse={mouse} lineX={lineX:F0} -> {(left ? "screen-left" : "screen-right")}");
-                }
-                Jiggle(best, cam, left);
+                case BodyPart.Head: HeadPat(best); break;
+                case BodyPart.Foot: Tickle(best, foot: true); break;
+                case BodyPart.Tummy: Tickle(best, foot: false); break;
+                case BodyPart.Leg:
+                    {
+                        // Thigh or shin/ankle: from the dominant bone of the hit.
+                        string topBone = (bestHit.bone ?? "").Split(' ')[0].ToLowerInvariant();
+                        _legIsThigh = topBone.Contains("thigh") || topBone.Contains("upleg") || topBone.Contains("upperleg") || topBone.Contains("thight");
+                        Poke(best, false, leg: true);
+                    }
+                    break;
+                case BodyPart.ButtLeft:
+                case BodyPart.ButtRight:
+                    Poke(best, true, butt: true);
+                    JiggleButt(best, cam, bestHit.part == BodyPart.ButtLeft);
+                    break;
+                case BodyPart.Face: Poke(best, false); break;
+                case BodyPart.Eye: Poke(best, false, pokeEye: true); break;
+                case BodyPart.Glasses: PlayGameSound(_glassSound.Value); if (_debug.Value) Log.LogInfo("[Hit] glasses protect her eyes"); break;
+                case BodyPart.Mouth: Poke(best, false, pokeMouth: true); break;
+                default:
+                    Poke(best, true);
+                    JiggleBreast(best, cam, bestHit.part == BodyPart.BreastLeft);
+                    break;
             }
+            // Free roam: tease her enough and she picks you up (the "E" pickup stays instant).
+            if (freeRoam && !_dropping && _moods.TryGetValue(best, out var mood) && LevelOf(mood.annoyance) >= _pickupLevel.Value)
+                StartCoroutine(PickupLater(best, 1.2f));
+        }
+
+        /// <summary>Same as pressing "E" at her: the game's own call/pickup interaction.</summary>
+        private void RequestPickup(Giantess g)
+        {
+            var player = PlayerDriver.LocalPlayer;
+            var call = g.GetComponentInChildren<CallGiantess>();
+            if (player == null || call == null) { Log.LogInfo("[Pickup] no call interaction found"); return; }
+            if (!call.CanMainInteract(player)) { Log.LogInfo("[Pickup] she cannot pick you up right now"); return; }
+            call.OnMainInteract(player);
+            Log.LogInfo($"[Pickup] {g.dialogue?.character} picks you up");
+        }
+
+        private bool _pickupPending;
+
+        private IEnumerator PickupLater(Giantess g, float delay)
+        {
+            if (_pickupPending) yield break;
+            _pickupPending = true;
+            yield return new WaitForSeconds(delay);
+            _pickupPending = false;
+            if (g != null && !_dropping) RequestPickup(g);
+        }
+
+        private readonly List<Giantess> _lobbyGiantesses = new List<Giantess>();
+        private float _nextScan;
+
+        /// <summary>Lobby, nobody holds you: every character is touchable within arm's reach.</summary>
+        private void MarkFreeRoam()
+        {
+            if (!_freeEnabled.Value) return;
+            var setup = SetupManager.Instance;
+            if (setup == null || !setup.isLobby) return;
+            int frame = Time.frameCount;
+            // Held / hugged / ... by someone right now? Then no free roam.
+            foreach (var kv in Plugin_Active.PoseFrame) if (kv.Key != null && frame - kv.Value <= 3) return;
+            if (Time.time >= _nextScan)
+            {
+                _nextScan = Time.time + 1f;
+                _lobbyGiantesses.Clear();
+                foreach (var ai in FindObjectsOfType<GiantessAI>()) if (ai != null && ai.giantess != null) _lobbyGiantesses.Add(ai.giantess);
+            }
+            foreach (var g in _lobbyGiantesses)
+            {
+                if (g == null) continue;
+                Plugin_Active.Map[g] = frame;
+                Plugin_Active.Poses[g] = Pose.Free;
+            }
+        }
+
+        private void JiggleButt(Giantess g, Camera cam, bool herLeft)
+        {
+            var outfit = g.variation?.currentOutfitVariation;
+            if (outfit == null || _jiggleForce.Value <= 0f) return;
+            var cloths = herLeft ? outfit.ButtPhysics_L : outfit.ButtPhysics_R;
+            if (cloths == null) return;
+            foreach (var c in cloths)
+            {
+                if (c == null || !c.isActiveAndEnabled) continue;
+                Vector3 dir = (BreastPos(c) - cam.transform.position).normalized;
+                c.AddForce(dir, _jiggleForce.Value);
+            }
+        }
+
+        /// <summary>The game's own footwear state: only bare feet and socks can be tickled.</summary>
+        private static bool WearsShoes(Giantess g)
+        {
+            try
+            {
+                var shoe = g.variation?.currentShoeVariation;
+                if (shoe == null) return false;
+                return shoe.shoeType != ShoeType.Bare && shoe.shoeType != ShoeType.Socks;
+            }
+            catch { return false; }
+        }
+
+        private static string ShoeName(Giantess g)
+        {
+            try { return g.variation?.currentShoeVariation?.shoeType.ToString() ?? "?"; } catch { return "?"; }
+        }
+
+        /// <summary>
+        /// Anything covering the foot blocks the tickle, except her skin (body/leg meshes) and
+        /// socks / stockings / tights.
+        /// </summary>
+        private static bool IsFootwear(string mesh)
+        {
+            if (string.IsNullOrEmpty(mesh)) return false;
+            string n = mesh.ToLowerInvariant();
+            string[] open = { "leg", "feet", "foot", "body", "bare", "skin", "decal", "sock", "stocking", "tight", "pantyhose", "hose" };
+            foreach (var k in open) if (n.Contains(k)) return false;
+            return true;
+        }
+
+        /// <summary>What can be touched in each pose.</summary>
+        private static bool Allowed(Pose pose, BodyPart part)
+        {
+            switch (pose)
+            {
+                case Pose.Free: return true;
+                case Pose.Massage: return part == BodyPart.Foot;
+                case Pose.Lap: return part == BodyPart.BreastLeft || part == BodyPart.BreastRight || part == BodyPart.Tummy;
+                case Pose.Hug: return part == BodyPart.BreastLeft || part == BodyPart.BreastRight || part == BodyPart.Face || part == BodyPart.Eye || part == BodyPart.Mouth || part == BodyPart.Glasses || part == BodyPart.Head;
+                default: return part != BodyPart.Tummy;   // Hold: face, headpat, breasts, soles
+            }
+        }
+
+        /// <summary>Push the breast that was actually hit (her left/right) away from the player.</summary>
+        private void JiggleBreast(Giantess g, Camera cam, bool herLeft)
+        {
+            var outfit = g.variation?.currentOutfitVariation;
+            if (outfit == null || _jiggleForce.Value <= 0f) return;
+            var cloth = herLeft ? outfit.Breast_L : outfit.Breast_R;
+            if (cloth == null || !cloth.isActiveAndEnabled) return;
+            Vector3 dir = (BreastPos(cloth) - cam.transform.position).normalized;
+            cloth.AddForce(dir, _jiggleForce.Value);
         }
 
         private void LogDiagnostics()
@@ -266,69 +405,6 @@ namespace LFPoke
             if (tab == null) Log.LogInfo("[Diag] LevelSelectTabGiantess.Instance == null");
         }
 
-        /// <summary>Screen-space circle covering the face: between head bone and mouth, a bit above the mouth.</summary>
-        private bool FaceOnScreen(Giantess g, Camera cam, out Vector2 center, out float radius)
-        {
-            center = default; radius = 0;
-            if (g.headTransform == null) return false;
-            Vector3 head = g.headTransform.position;
-            Vector3 mouth = g.mouthTransform != null ? g.mouthTransform.position : head;
-            float size = Mathf.Max((mouth - head).magnitude, 0.0001f);
-            Vector3 face = mouth + Vector3.up * size * 0.6f;   // around the nose / eyes
-            float worldR = size * 1.3f * _hitRadius.Value;
-
-            Vector3 sc = cam.WorldToScreenPoint(face);
-            if (sc.z <= 0) return false;
-            Vector3 edge = cam.WorldToScreenPoint(face + cam.transform.right * worldR);
-            center = sc;
-            center.y -= Screen.height * 0.07f;   // measured: projected point sits between the brows, face centre is lower
-            radius = Mathf.Max(Vector2.Distance(sc, edge), Screen.height * 0.2f * _hitRadius.Value);
-            if (_debug.Value && Input.GetMouseButtonDown(0))
-            {
-                Vector3 hs = cam.WorldToScreenPoint(head), ms = cam.WorldToScreenPoint(mouth);
-                Log.LogInfo($"[Geo] mouse={(Vector2)Input.mousePosition} face={center} head={(Vector2)hs} mouth={(Vector2)ms} headMouth={size:F3}m scale={g.scale:F2} screen={Screen.width}x{Screen.height}");
-            }
-            return true;
-        }
-
-        /// <summary>Screen position of the (upper) chest bone; the breast zones are placed relative to it.</summary>
-        private bool ChestBoneOnScreen(Giantess g, Camera cam, out Vector2 pos)
-        {
-            pos = default;
-            var anim = g.animator;
-            if (anim == null || !anim.isHuman) return false;
-            Transform t = anim.GetBoneTransform(HumanBodyBones.UpperChest);
-            if (t == null) t = anim.GetBoneTransform(HumanBodyBones.Chest);
-            if (t == null) return false;
-            Vector3 sc = cam.WorldToScreenPoint(t.position);
-            if (sc.z <= 0) return false;
-            pos = sc;
-            return true;
-        }
-
-        /// <summary>Push the clicked breast (by screen side) away from the player (camera).</summary>
-        private void Jiggle(Giantess g, Camera cam, bool screenLeft)
-        {
-            var outfit = g.variation?.currentOutfitVariation;
-            if (outfit == null || _jiggleForce.Value <= 0f) return;
-            var r = outfit.Breast_R; var l = outfit.Breast_L;
-            bool okR = r != null && r.isActiveAndEnabled, okL = l != null && l.isActiveAndEnabled;
-            if (!okR && !okL) return;
-            Vector3 pr = BreastPos(r), pl = BreastPos(l);
-
-            MagicaCloth2.MagicaCloth target;
-            if (okR && okL)
-            {
-                bool rIsLeft = cam.WorldToScreenPoint(pr).x < cam.WorldToScreenPoint(pl).x;
-                target = screenLeft == rIsLeft ? r : l;
-            }
-            else target = okR ? r : l;
-            if (_debug.Value) Log.LogInfo($"[Jiggle] {(screenLeft ? "screen-left" : "screen-right")} -> {(target == r ? "Breast_R" : "Breast_L")}");
-
-            Vector3 dir = ((target == r ? pr : pl) - cam.transform.position).normalized;
-            target.AddForce(dir, _jiggleForce.Value);
-        }
-
         /// <summary>World position of the breast: the cloth's first root bone (the component itself sits at the outfit root).</summary>
         private static Vector3 BreastPos(MagicaCloth2.MagicaCloth c)
         {
@@ -341,28 +417,38 @@ namespace LFPoke
         }
 
 
-        private void Poke(Giantess g, bool chest)
+
+        private bool _legIsThigh;
+
+        private void Poke(Giantess g, bool chest, bool butt = false, bool leg = false, bool pokeEye = false, bool pokeMouth = false)
         {
             if (!_moods.TryGetValue(g, out var m)) _moods[g] = m = new Mood();
             var ch = g.dialogue != null ? g.dialogue.character : CharacterType.None;
-            var pers = Personality.For(ch);
             m.affection = AffectionOf(ch);
+            var pers = Personality.For(ch, m.affection);
             m.lastPoke = Time.time;
 
             // Red, when fond of you: chest pokes please her instead of annoying her.
-            if (chest && pers.likesChestWhenFond && m.affection >= _fondAt.Value)
+            if (chest && !butt && pers.likesChestWhenFond && m.affection >= _fondAt.Value)
             {
                 ChestLiked(g, m);
                 return;
             }
 
-            float gain = (chest ? pers.chestPerPoke * (_chestAnnoyance.Value / 2f) : pers.facePerPoke) / (1f + _affPatience.Value * m.affection);
+            float gain = (pokeEye ? pers.facePerPoke * 3f : pokeMouth ? pers.facePerPoke * 1.2f : butt ? pers.buttGain : chest ? pers.chestPerPoke * (_chestAnnoyance.Value / 2f) : pers.facePerPoke) / (1f + _affPatience.Value * PatienceAffection(g.dialogue != null ? g.dialogue.character : CharacterType.None, m.affection));
             m.annoyance = Mathf.Min(m.annoyance + gain, _levelAt[_levelAt.Length - 1] + 3f);
             int lvl = LevelOf(m.annoyance);
-            if (chest) lvl = pers.chestLevels[lvl];
+            if (butt) lvl = pers.buttLevels[lvl];
+            else if (chest) lvl = pers.chestLevels[lvl];
+            else lvl = pers.faceLevels[lvl];
+            if (pokeEye) lvl = Mathf.Max(lvl, 2);                       // a poke in the eye is never funny
             var (eye, mouth) = Reactions[lvl];
-            if (chest && lvl == 1 && pers.chestFace1.HasValue) (eye, mouth) = pers.chestFace1.Value;
-            if (chest && lvl == 2 && pers.chestFace2.HasValue) (eye, mouth) = pers.chestFace2.Value;
+            if (pokeEye && lvl < 4) (eye, mouth) = ("hurt eyes", "hurt mouth");
+            if (pokeMouth && lvl < 3) (eye, mouth) = pers.buttFlirty ? ("smug eyes", "smug mouth") : ("embarrased eyes", "embarrased mouth");
+            if (butt && lvl == 1) (eye, mouth) = ("shock eyes", "shy mouth");
+            if (butt && lvl == 2 && pers.buttFlirty) (eye, mouth) = ("smug eyes", "smug mouth");
+            if (chest && !butt && lvl == 1 && pers.chestFace1.HasValue) (eye, mouth) = pers.chestFace1.Value;
+            if (chest && !butt && lvl == 2 && pers.chestFace2.HasValue) (eye, mouth) = pers.chestFace2.Value;
 
             var em = g.expressionManager;
             em.eyeOverride.SetEvent(eye);
@@ -376,6 +462,8 @@ namespace LFPoke
             {
                 PlayTouch(BoobKey, _boobSound.Value);
             }
+            else if (leg)
+                PlayTouch(FootKey, _footSound.Value);
             else
                 PlayTouch(TouchKey, _pokeSound.Value);
             m.madPokes = lvl >= 4 ? m.madPokes + 1 : 0;
@@ -389,9 +477,21 @@ namespace LFPoke
             bool changed = !_lastLevel.TryGetValue(g, out int prev) || prev != lvl;
             _lastLevel[g] = lvl;
             var ls = Lines.For(g.dialogue != null ? g.dialogue.character : CharacterType.None);
-            Lines.Line[] set = ls == null ? null : chest ? (ls.Chest.TryGetValue(lvl, out var cs) ? cs : null) : ls.Face[lvl];
+            Lines.Line[] set = ls == null ? null
+                : (leg && lvl < 3 && (_legIsThigh ? ls.Thigh : ls.Shin) != null) ? (_legIsThigh ? ls.Thigh : ls.Shin)
+                : (pokeEye && lvl < 4 && ls.Eye != null) ? ls.Eye
+                : (pokeMouth && lvl < 3 && ls.Mouth != null) ? ls.Mouth
+                : (butt && lvl < 4 && ls.Butt != null && (!pers.buttFlirty || lvl == 2)) ? ls.Butt
+                : (chest && !butt) ? (ls.Chest.TryGetValue(lvl, out var cs) ? cs : null) : ls.Face[lvl];
             Say(g, set, changed);
-            Log.LogInfo($"[Poke] {g.dialogue?.character} {(chest ? "chest" : "face")} affection={m.affection:F2} annoyance={m.annoyance:F1} level={lvl} ({eye}/{mouth})");
+            Log.LogInfo($"[Poke] {g.dialogue?.character} {(pokeEye ? "eye" : pokeMouth ? "mouth" : butt ? "butt" : chest ? "chest" : "face")} affection={m.affection:F2} annoyance={m.annoyance:F1} level={lvl} ({eye}/{mouth})");
+        }
+
+        /// <summary>Affection as it affects patience (Blue: nothing until it is maxed out).</summary>
+        private static float PatienceAffection(CharacterType ch, float affection)
+        {
+            var p = Personality.For(ch);
+            return p.affectionOnlyAtMax && affection < 0.999f ? 0f : affection;
         }
 
         private float AffectionOf(CharacterType ch)
@@ -415,6 +515,37 @@ namespace LFPoke
             var ls = Lines.For(g.dialogue.character);
             if (ls?.ChestLiked != null) Say(g, ls.ChestLiked, false);
             Log.LogInfo($"[Poke] {g.dialogue?.character} chest (liked) affection={m.affection:F2} annoyance={m.annoyance:F1}");
+        }
+
+        private void Tickle(Giantess g, bool foot)
+        {
+            if (!_moods.TryGetValue(g, out var m)) _moods[g] = m = new Mood();
+            var ch = g.dialogue != null ? g.dialogue.character : CharacterType.None;
+            m.affection = AffectionOf(ch);
+            m.lastPoke = Time.time;
+            var pers = Personality.For(ch, m.affection);
+            m.annoyance = Mathf.Min(m.annoyance + pers.tickleGain / (1f + _affPatience.Value * PatienceAffection(g.dialogue != null ? g.dialogue.character : CharacterType.None, m.affection)), _levelAt[_levelAt.Length - 1] + 3f);
+            int lvl = LevelOf(m.annoyance);
+            bool annoyed = lvl >= pers.tickleAnnoyedAt;
+            var em = g.expressionManager;
+            int rl = annoyed ? pers.faceLevels[lvl] : lvl;   // e.g. Blue: never the giggle face
+            var (eye, mouth) = annoyed ? Reactions[rl] : ("laugh eyes", "laugh mouth");
+            em.eyeOverride.SetEvent(eye);
+            em.mouthOverride.SetEvent(mouth);
+            m.showing = true;
+            m.clearAt = Time.time + _reactionSeconds.Value;
+            if (foot) PlayTouch(FootKey, _footSound.Value);
+            else if (HasClips(TickleKey)) PlayTouch(TickleKey, "");
+            var ls = Lines.For(ch);
+            // Annoyed by tickling: her face lines; Blue (never funny) has her own grumpy tickle lines.
+            if (ls != null)
+            {
+                var set = (annoyed && !(pers.tickleAnnoyedAt == 0 && ls.Tickle != null && lvl < 4)) ? ls.Face[rl] : (ls.Tickle ?? ls.Face[0]);
+                // Soles: foot jokes mixed in (until she is really mad).
+                if (foot && ls.Feet != null && lvl < 4) set = set.Concat(ls.Feet).ToArray();
+                Say(g, set, true);
+            }
+            Log.LogInfo($"[Tickle] {ch} annoyance={m.annoyance:F1} level={lvl}");
         }
 
         private void HeadPat(Giantess g)
@@ -449,7 +580,7 @@ namespace LFPoke
         private const int HeadpatKey = 100;
 
         private AudioSource _touchAudio, _sfxAudio;
-        private const int TouchKey = 101, PatKey = 102, BoobKey = 103;
+        private const int TouchKey = 101, PatKey = 102, BoobKey = 103, TickleKey = 104, FootKey = 105;
 
         /// <summary>F9: save every loaded AudioClip as WAV (to pick sounds by ear).</summary>
         private void DumpAllClips()
@@ -572,12 +703,17 @@ namespace LFPoke
             {
                 dm.InterruptCurrentDialogue();
                 var set = quit ? lsd.Quit : lsd.Drop;
-                var line = set[UnityEngine.Random.Range(0, set.Length)];
+                var line = PickLine(g, set);
                 dm.AddDialgoue(new DialogueExpressionAndText(g.dialogue.character, line.expression, line.key));
                 Log.LogInfo($"[Talk] {line.key}");
             }
             Log.LogInfo($"[Drop] #{_drops}{(quit ? " -> quitting the game" : " -> back to the lobby")}");
-            yield return new WaitForSeconds(quit ? 3.5f : 2.5f);
+            if (quit)
+            {
+                // Her angry line first, then a short pause before the game closes.
+                yield return new WaitForSeconds(3.5f + _quitDelay.Value);
+            }
+            else yield return new WaitForSeconds(2.5f);
             _dropping = false;
             if (quit) { Application.Quit(); yield break; }
             _moods.Clear();
@@ -598,15 +734,56 @@ namespace LFPoke
             _sfxAudio.PlayOneShot(clip, _touchVolume.Value * 0.2f);
         }
 
+        /// <summary>
+        /// False when the level-select UI was hidden with its eye button (the dialogue box is hidden
+        /// then, only the text's start sound would be heard).
+        /// </summary>
+        private static bool DialogueVisible(DialogueManager dm)
+        {
+            try
+            {
+                var ls = LevelSelect.Instance;
+                if (ls == null || ls.canvas == null || ls.hideCanvas == null) return true;
+                bool hiddenByEye = !ls.canvas.enabled && ls.hideCanvas.enabled;
+                return !hiddenByEye;
+            }
+            catch { return true; }
+        }
+
+        private readonly Dictionary<Giantess, float> _lastTouch = new Dictionary<Giantess, float>();
+
+        // Last line key said per character, so the same line is never repeated back to back.
+        private readonly Dictionary<CharacterType, string> _lastLine = new Dictionary<CharacterType, string>();
+
+        private Lines.Line PickLine(Giantess g, Lines.Line[] set)
+        {
+            var ch = g.dialogue != null ? g.dialogue.character : CharacterType.None;
+            _lastLine.TryGetValue(ch, out var last);
+            var pool = set.Where(l => l.key != last).ToArray();
+            if (pool.Length == 0) pool = set;
+            var line = pool[UnityEngine.Random.Range(0, pool.Length)];
+            _lastLine[ch] = line.key;
+            return line;
+        }
+
         /// <summary>Queue one existing Akipo line (game dialogue box; LFTTS voices it).</summary>
         private void Say(Giantess g, Lines.Line[] set, bool force)
         {
             if (!_talk.Value || set == null || set.Length == 0) return;
             if (g.dialogue == null || Lines.For(g.dialogue.character) == null) return;
             var dm = DialogueManager.Instance;
-            if (dm == null || dm.IsInProgress || Time.time < _nextTalk) return;
-            if (!force && UnityEngine.Random.value > _talkChance.Value) return;
-            var line = set[UnityEngine.Random.Range(0, set.Length)];
+            // First touch after a quiet moment always gets an answer, otherwise it feels like nothing happened.
+            bool first = !_lastTouch.TryGetValue(g, out float lastT) || Time.time - lastT > 8f;
+            _lastTouch[g] = Time.time;
+            if (dm == null || dm.IsInProgress) return;
+            if (!_talkHidden.Value && !DialogueVisible(dm))
+            {
+                if (_debug.Value) Log.LogInfo("[Talk] skipped: dialogue box hidden");
+                return;
+            }
+            if (!first && Time.time < _nextTalk) return;
+            if (!first && !force && UnityEngine.Random.value > _talkChance.Value) return;
+            var line = PickLine(g, set);
             dm.AddDialgoue(new DialogueExpressionAndText(g.dialogue.character, line.expression, line.key));
             _nextTalk = Time.time + _talkCooldown.Value;
             Log.LogInfo($"[Talk] {line.key}");
@@ -643,7 +820,7 @@ namespace LFPoke
         {
             string root = Path.Combine(Plugin.Dir, "sounds");
             if (!Directory.Exists(root)) { Log.LogInfo($"No sounds folder ({root}), poking is silent."); yield break; }
-            var folders = Enumerable.Range(0, Reactions.Length).Select(i => (i, "level" + i)).Append((HeadpatKey, "headpat")).Append((TouchKey, "touch")).Append((PatKey, "pat")).Append((BoobKey, "boob"));
+            var folders = Enumerable.Range(0, Reactions.Length).Select(i => (i, "level" + i)).Append((HeadpatKey, "headpat")).Append((TouchKey, "touch")).Append((PatKey, "pat")).Append((BoobKey, "boob")).Append((TickleKey, "tickle")).Append((FootKey, "foot"));
             foreach (var (lvl, name) in folders)
             {
                 string dir = Path.Combine(root, name);
@@ -667,8 +844,13 @@ namespace LFPoke
         }
     }
 
+    /// <summary>Which pose she is in: decides what can be touched.</summary>
+    internal enum Pose { Free, Hold, Hug, Lap, Massage }
+
     internal static class Plugin_Active
     {
+        internal static readonly Dictionary<Giantess, Pose> Poses = new Dictionary<Giantess, Pose>();
+        internal static readonly Dictionary<Giantess, int> PoseFrame = new Dictionary<Giantess, int>();
         // Giantesses currently holding the player and following the mouse -> last frame seen.
         internal static readonly Dictionary<Giantess, int> Map = new Dictionary<Giantess, int>();
     }
@@ -681,6 +863,29 @@ namespace LFPoke
             try { PokeRunner.CaptureCauldron(__instance); } catch (Exception e) { Plugin.Log.LogWarning("[Cauldron] " + e.Message); }
         }
 
+        private static void Mark(Giantess g, Pose pose)
+        {
+            if (g == null) return;
+            Plugin_Active.Poses[g] = pose;
+            Plugin_Active.PoseFrame[g] = Time.frameCount;
+            Mark(g);
+        }
+
+        private static void MarkIfLevelSelect(object behaviour, GiantessAI ai, Pose pose)
+        {
+            var st = Traverse.Create(behaviour).Field("state").GetValue();
+            if (st != null && st.ToString() == "LevelSelect") Mark(ai?.giantess, pose);
+        }
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GiantessBehaviourEventHugAkipo), nameof(GiantessBehaviourEventHugAkipo.BehaviourUpdate))]
+        private static void HugPose(GiantessBehaviourEventHugAkipo __instance, GiantessAI giantessAI) => MarkIfLevelSelect(__instance, giantessAI, Pose.Hug);
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GiantessBehaviourEventLapAkipo), nameof(GiantessBehaviourEventLapAkipo.BehaviourUpdate))]
+        private static void LapPose(GiantessBehaviourEventLapAkipo __instance, GiantessAI giantessAI) => MarkIfLevelSelect(__instance, giantessAI, Pose.Lap);
+
+        [HarmonyPostfix, HarmonyPatch(typeof(GiantessBehaviourEventFootMassageAkipo), nameof(GiantessBehaviourEventFootMassageAkipo.BehaviourUpdate))]
+        private static void MassagePose(GiantessBehaviourEventFootMassageAkipo __instance, GiantessAI giantessAI) => MarkIfLevelSelect(__instance, giantessAI, Pose.Massage);
+
         private static void Mark(Giantess g)
         {
             if (g == null) return;
@@ -692,13 +897,13 @@ namespace LFPoke
         [HarmonyPostfix, HarmonyPatch(typeof(GiantessBehaviourGrabPlayer), nameof(GiantessBehaviourGrabPlayer.BehaviourUpdate))]
         private static void AkipoHold(GiantessBehaviourGrabPlayer __instance, GiantessAI giantessAI)
         {
-            if (__instance.state == GiantessBehaviourGrabPlayer.BehaviourState.LevelSelect) Mark(giantessAI.giantess);
+            if (__instance.state == GiantessBehaviourGrabPlayer.BehaviourState.LevelSelect) Mark(giantessAI.giantess, Pose.Hold);
         }
 
         [HarmonyPostfix, HarmonyPatch(typeof(GiantessBehaviourGrabPlayerBackground), nameof(GiantessBehaviourGrabPlayerBackground.BehaviourUpdate))]
         private static void TwinsHold(GiantessBehaviourGrabPlayerBackground __instance, GiantessAI giantessAI)
         {
-            if (__instance.state == GiantessBehaviourGrabPlayerBackground.BehaviourState.LevelSelect) Mark(giantessAI.giantess);
+            if (__instance.state == GiantessBehaviourGrabPlayerBackground.BehaviourState.LevelSelect) Mark(giantessAI.giantess, Pose.Hold);
         }
     }
 }

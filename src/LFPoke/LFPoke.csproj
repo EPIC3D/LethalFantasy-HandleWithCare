@@ -6,7 +6,7 @@
     <Nullable>disable</Nullable>
     <AssemblyName>LFPoke</AssemblyName>
     <RootNamespace>LFPoke</RootNamespace>
-    <Version>0.2.0</Version>
+    <Version>0.3.0</Version>
     <Product>Handle With Care</Product>
   </PropertyGroup>
   <PropertyGroup>
@@ -22,6 +22,7 @@
     <Reference Include="UnityEngine.AudioModule" HintPath="$(ManagedDir)\UnityEngine.AudioModule.dll" Private="false" />
     <Reference Include="UnityEngine.AnimationModule" HintPath="$(ManagedDir)/UnityEngine.AnimationModule.dll" Private="false" />
     <Reference Include="MagicaClothV2" HintPath="$(ManagedDir)/MagicaClothV2.dll" Private="false" />
+    <Reference Include="UnityEngine.UIModule" HintPath="$(ManagedDir)/UnityEngine.UIModule.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(ManagedDir)\UnityEngine.UI.dll" Private="false" />
     <Reference Include="UnityEngine.InputLegacyModule" HintPath="$(ManagedDir)\UnityEngine.InputLegacyModule.dll" Private="false" />
     <Reference Include="UnityEngine.UnityWebRequestModule" HintPath="$(ManagedDir)\UnityEngine.UnityWebRequestModule.dll" Private="false" />
