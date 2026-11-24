@@ -49,7 +49,7 @@ Push your luck too far and she will make you regret it. Handle with care.
   - *Akipo's hug:* face, eyes, mouth, headpat, chest. *Lap:* chest and tummy.
     *Foot massage:* soles only.
   - *Free roam in the lobby:* anything within arm's reach (Akipo is tall – her
-    legs and feet). With the game's Foot Climber perk you can also climb her foot.
+    legs and feet). With one of the game's perk you can also do extreme sports.
 - **Sounds** come from the game itself: picking up food (face, legs), a gravel
   step (shoes), glass (Blue's glasses), the cauldron "bloop" (chest, butt) and a
   grass rustle (headpat). The cauldron sound only loads after you have played a
