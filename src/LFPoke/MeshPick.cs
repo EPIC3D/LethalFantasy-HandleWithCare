@@ -19,6 +19,7 @@ namespace LFPoke
             public float distance;
             public Vector3 point;
             public string bone, renderer;
+            public Vector3 normal;   // surface direction at the hit, facing the camera
         }
 
         private static readonly List<Vector3> _verts = new List<Vector3>();
@@ -26,6 +27,13 @@ namespace LFPoke
 
         internal static string LastDiag = "";
         internal static float BreastShare = 0.3f;   // breast bones must move the spot at least this much
+
+        /// <summary>The triangle's normal, turned toward the camera (winding doesn't matter).</summary>
+        private static Vector3 FacingNormal(Ray ray, Vector3 a, Vector3 b, Vector3 c)
+        {
+            Vector3 n = Vector3.Cross(b - a, c - a).normalized;
+            return Vector3.Dot(n, ray.direction) > 0f ? -n : n;
+        }
 
         internal static bool Pick(Giantess g, Ray ray, out Hit hit)
         {
@@ -58,6 +66,7 @@ namespace LFPoke
                         {
                             hit.distance = t;
                             hit.point = ray.GetPoint(t);
+                            hit.normal = FacingNormal(ray, a, b, c);
                             hit.renderer = smr.name;
                             var w = BoneWeightsOf(smr, tris[i], tris[i + 1], tris[i + 2]);
                             var bone = Dominant(w);
@@ -86,10 +95,12 @@ namespace LFPoke
                     for (int i = 0; i < tris.Length; i += 3)
                     {
                         nTris++;
-                        if (RayTriangle(ray, m2.MultiplyPoint3x4(_verts[tris[i]]), m2.MultiplyPoint3x4(_verts[tris[i + 1]]), m2.MultiplyPoint3x4(_verts[tris[i + 2]]), out float t) && t < hit.distance)
+                        Vector3 ma = m2.MultiplyPoint3x4(_verts[tris[i]]), mb = m2.MultiplyPoint3x4(_verts[tris[i + 1]]), mc = m2.MultiplyPoint3x4(_verts[tris[i + 2]]);
+                        if (RayTriangle(ray, ma, mb, mc, out float t) && t < hit.distance)
                         {
                             hit.distance = t;
                             hit.point = ray.GetPoint(t);
+                            hit.normal = FacingNormal(ray, ma, mb, mc);
                             hit.renderer = mf.name;
                             hit.bone = mf.transform.parent != null ? mf.transform.parent.name : mf.name;
                             hit.part = Classify(g, anim, mf.transform, hit.point);

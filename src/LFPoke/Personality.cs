@@ -35,21 +35,21 @@ namespace LFPoke
         // Flirty: chest pokes stay smug/teasing for a long time.
         internal static readonly Personality Red = new Personality
         {
-            // +1: tolerant and forgiving.
-            facePerPoke = 0.6f, chestPerPoke = 1f, patCalm = 4f,
-            tickleGain = 0.3f, tickleAnnoyedAt = 4,
+            // +0.5: tolerant and forgiving.
+            facePerPoke = 0.8f, chestPerPoke = 1.5f, patCalm = 3.5f,
+            tickleGain = 0.4f, tickleAnnoyedAt = 4,
             chestLevels = new[] { 2, 2, 2, 3, 4 },
             chestFace2 = ("smug eyes", "smug mouth"),
             likesChestWhenFond = true,
-            buttLevels = new[] { 2, 2, 3, 4, 4 }, buttGain = 2f, buttFlirty = true,   // flirty, but only briefly
+            buttLevels = new[] { 2, 2, 3, 4, 4 }, buttGain = 2.5f, buttFlirty = true,   // flirty, but only briefly
         };
 
         // Blue at max affection: she lets you closer – giggles sometimes, tolerates a little tickling.
         private static readonly Personality BlueMaxed = new Personality
         {
-            facePerPoke = 1.3f, chestPerPoke = 2f, patCalm = 4f,
+            facePerPoke = 1.15f, chestPerPoke = 2f, patCalm = 3.5f,
             faceLevels = new[] { 0, 1, 2, 3, 4 },
-            tickleGain = 1.5f, tickleAnnoyedAt = 2,
+            tickleGain = 1f, tickleAnnoyedAt = 2,
             buttGain = 3f,
             chestFace1 = ("shock eyes", "shy mouth"),
         };
@@ -58,11 +58,11 @@ namespace LFPoke
         {
             affectionOnlyAtMax = true,
             whenMaxed = BlueMaxed,
-            // -1: Blue doesn't like being touched anywhere – only headpats.
-            facePerPoke = 1.8f, chestPerPoke = 3f, patCalm = 4f,
+            // -0.5: Blue doesn't like being touched anywhere – only headpats.
+            facePerPoke = 1.4f, chestPerPoke = 2.5f, patCalm = 3.5f,
             faceLevels = new[] { 1, 2, 3, 4, 4 },          // never giggles at a poke
-            tickleGain = 2f, tickleAnnoyedAt = 0,           // tickling is never funny to her
-            buttGain = 4f,
+            tickleGain = 1.25f, tickleAnnoyedAt = 0,        // tickling is never funny to her
+            buttGain = 3.5f,
             chestFace1 = ("shock eyes", "shy mouth"),
         };
 

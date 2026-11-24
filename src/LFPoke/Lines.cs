@@ -23,6 +23,8 @@ namespace LFPoke
             public Line[] Eye, Mouth, Butt;       // poke in the eye, boop on the lips, butt pinch
             public Line[] Feet;                   // foot jokes, mixed into sole touches
             public Line[] Thigh, Shin;            // leg pokes (Akipo's shrine-blessing reactions)
+            // Akipo's foot-grab reactions, by what she wears on her feet / legs
+            public Line[] FootBare, FootSocks, FootSlippers, FootHeels, FootShoes, FootStrings, LegBare, LegStockings;
         }
 
         private static Line L(string key, DialogueExpression e) => new Line(key, e);
@@ -51,6 +53,71 @@ namespace LFPoke
         };
         private static readonly Set Akipo = new Set
         {
+            FootBare = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BAREFOOT_1", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BAREFOOT_2", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BAREFOOT_4", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BAREFOOT_5", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOT_4", DialogueExpression.OpenSmile),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOT_5", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOT_6", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOT_7", DialogueExpression.Shocked),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOT_9_2", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOT_11", DialogueExpression.NeutralTilt),
+            },
+            FootSocks = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SOCKS_1", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SOCKS_2", DialogueExpression.Embarrased),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SOCKS_3", DialogueExpression.Shocked),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SOCKS_4", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SOCKS_5", DialogueExpression.OpenSmile),
+            },
+            FootSlippers = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SLIPPERS_1", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SLIPPERS_2", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_SLIPPERS_3", DialogueExpression.Shocked),
+            },
+            FootHeels = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_HEELS_1", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_HEELS_2", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_HEELS_3", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_HEELS_4", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_HEELS_5", DialogueExpression.NeutralTilt),
+            },
+            FootShoes = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_1", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_2", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_3", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_4", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_5", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_6", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_7", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_8", DialogueExpression.Neutral),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_9", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_10", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTWEAR_11", DialogueExpression.NeutralTilt),
+            },
+            FootStrings = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_STRING_1", DialogueExpression.Neutral),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_STRING_2", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_STRING_3", DialogueExpression.Glowing),
+            },
+            LegBare = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BARELEG_1", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BARELEG_2", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BARELEG_3", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_BARELEG_5", DialogueExpression.NeutralTilt),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEG_7", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEG_10", DialogueExpression.Glowing),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEG_11_1", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEG_2", DialogueExpression.NeutralTilt),
+            },
+            LegStockings = new[] {
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEGSTOCKINGS_4", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEGSTOCKINGS_2", DialogueExpression.Smug),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_FOOTSTOCKINGS_3", DialogueExpression.OpenSmile),
+                L("AKIPO_DIALOGUE_FOOTGRAB_GRAB_LEG_7", DialogueExpression.Glowing),
+            },
             Thigh = new[] {
                 L("AKIPO_DIALOGUE_BLESSING_THIGH_1_1", DialogueExpression.NeutralTilt),
                 L("AKIPO_DIALOGUE_BLESSING_THIGH_1_2", DialogueExpression.Glowing),
@@ -81,7 +148,6 @@ namespace LFPoke
                     L("AKIPO_DIALOGUE_IDLE_STARING_8", DialogueExpression.Glowing),
                     L("AKIPO_DIALOGUE_EVENT_PET_WHY_NICE_WARM_3", DialogueExpression.Laugh),
                     L("AKIPO_DIALOGUE_EVENT_MOMMOMENT_REWARD_2", DialogueExpression.Glowing),
-                    L("AKIPO_DIALOGUE_FOOTGRAB_LETGO_STAM_7", DialogueExpression.Glowing),
                 },
                 new[] {
                     L("AKIPO_DIALOGUE_EVENT_FMASSAGE_INTRO_K_1", DialogueExpression.Embarrased),

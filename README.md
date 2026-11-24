@@ -8,8 +8,7 @@ massage poses, or when you walk up to them in the lobby – and they react. Keep
 poking and they get more and more annoyed, a bit like clicking a unit too often
 in an old RTS.
 
-Push your luck too far and she puts you down. Do it again and she closes the
-game. Handle with care.
+Push your luck too far and she will make you regret it. Handle with care.
 
 | You do | She does |
 | --- | --- |
@@ -21,8 +20,8 @@ game. Handle with care.
 | Tickle her soles or tummy | Laughs (Blue doesn't think it's funny); shoes block it, socks don't |
 | Poke her legs | Akipo answers with her shin/thigh lines |
 | Pat the top of her head | Gets happy and calms down (a grudging reaction if she is still annoyed) |
-| Keep poking while she is mad | Puts you down – back to the lobby, like the pause menu's *Lobby* button |
-| …and do it again | Closes the game |
+| Tickle her soles too much | Akipo crouches, then stomps her foot |
+| Keep poking while she is mad | She has had enough – find out what she does (or set `[Drop] Mode = Classic`: she puts you down, then closes the game) |
 
 - **Real hitboxes:** the click is tested against the character's own 3D model in
   her current pose, so it works in every camera view and pose.
@@ -50,7 +49,7 @@ game. Handle with care.
   - *Akipo's hug:* face, eyes, mouth, headpat, chest. *Lap:* chest and tummy.
     *Foot massage:* soles only.
   - *Free roam in the lobby:* anything within arm's reach (Akipo is tall – her
-    legs and feet). Tease her enough and she picks you up.
+    legs and feet). With the game's Foot Climber perk you can also climb her foot.
 - **Sounds** come from the game itself: picking up food (face, legs), a gravel
   step (shoes), glass (Blue's glasses), the cauldron "bloop" (chest, butt) and a
   grass rustle (headpat). The cauldron sound only loads after you have played a
@@ -66,9 +65,9 @@ fan-made mod and is not affiliated with or endorsed by the game's creator.
 
 > **Disclaimer:** This software is provided "as is", without warranty of any
 > kind. Use it at your own risk. The author accepts no responsibility for any
-> damage, data loss or game issues resulting from its use. Note that the mod
-> **can close the game on purpose** – save your progress first. See
-> [LICENSE](LICENSE) for details.
+> damage, data loss or game issues resulting from its use. In `Classic` drop
+> mode the mod **can close the game on purpose** – save your progress first.
+> See [LICENSE](LICENSE) for details.
 
 ## Download
 

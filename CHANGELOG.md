@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.4.0 – climbing, punishments, more reactions
+
+Tested against LethalFantasy beta 1.0.3.
+
+**Lobby**
+
+- With the game's **Foot Climber** perk chosen, you can climb Akipo's foot in the
+  lobby too: tap "E" on her foot to climb, hold it to call her. One steady prompt
+  shows both.
+- Climb all the way up and keep her company – she may surprise you.
+- Akipo crouches down after a few playful sole pokes, and stomps her foot when
+  the tickling gets too much.
+
+**Punishment**
+
+- When she has had enough, she no longer closes the game – the punishment has
+  changed, with measurable consequences. Find out for yourself
+  (`[Drop] Mode = Classic` brings back the old one).
+- She no longer picks you up when you tease her in free roam
+  (`[Free] PickupAtLevel`, now off by default).
+- Her anger fades more slowly (`[Mood] CalmDownDelay` / `CalmDownPerSecond`).
+
+**Reactions**
+
+- Akipo reacts to what she wears on her feet (the game's foot-grab lines) while
+  you climb her: bare feet, socks, slippers, heels, shoes and strapped geta/pokkuri.
+  Leg pokes get bare-leg and stocking lines.
+- Open footwear (heels, slippers, geta, pokkuri) leaves the top of her foot
+  ticklable – from above, not from the sole side.
+- Tolerance scale toned down: Red +0.5, Blue -0.5 (was +1 / -1).
+
 ## 0.3.0 – real hitboxes, more places, more to say
 
 Tested against LethalFantasy beta 1.0.3.
