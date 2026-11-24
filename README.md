@@ -20,8 +20,7 @@ Push your luck too far and she will make you regret it. Handle with care.
 | Tickle her soles or tummy | Laughs (Blue doesn't think it's funny); shoes block it, socks don't |
 | Poke her legs | Akipo answers with her shin/thigh lines |
 | Pat the top of her head | Gets happy and calms down (a grudging reaction if she is still annoyed) |
-| Tickle her soles too much | Akipo crouches, then stomps her foot |
-| Keep poking while she is mad | She has had enough – find out what she does (or set `[Drop] Mode = Classic`: she puts you down, then closes the game) |
+| Keep poking while she is mad | She has had enough. Find out. |
 
 - **Real hitboxes:** the click is tested against the character's own 3D model in
   her current pose, so it works in every camera view and pose.

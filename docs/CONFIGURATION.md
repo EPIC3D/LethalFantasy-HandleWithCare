@@ -17,13 +17,12 @@ Everything can be tuned in `<LethalFantasy>\BepInEx\config\com.epicopy.lfpoke.cf
 | Headpat | `CalmPerPat` | `3` | How much a pat calms her; scales each character's own value (`3` = as designed) |
 | Feet | `Enabled` | `true` | Tickling soles and tummy |
 | Free | `Enabled` / `Reach` | `true` / `0.75` | Touching in free roam, and your arm's reach |
-| Free | `LobbyClimbing` | `true` | With the game's **Foot Climber** perk chosen: climb Akipo's foot in the lobby (tap "E"); off = no climbing in the lobby |
-| Free | `HoldToPickupSeconds` | `1` | Aiming at her foot: hold "E" this long to call her instead of climbing |
+| Free | `LobbyClimbing` / `HoldToPickupSeconds` | `true` / `1` | Some perks matter in the lobby too. Off = the lobby as the game has it |
 | Free | `PickupKey` | `None` | Optional key that asks the nearest character to pick you up |
 | Free | `PickupAtLevel` | `-1` | Mood (0 giggle … 4 mad) at which she picks you up in free roam; `-1` = never |
-| Crouch | `Enabled` / `FootPokesPerCrouch` / `StaySeconds` | `true` / `5` / `10` | Akipo crouches down after a few playful sole pokes in free roam |
-| Stomp | `Enabled` / `AtLevel` | `true` / `3` | Akipo stomps her foot when sole tickling gets her to this mood |
-| Growth | `Enabled` | `true` | Foot Climber perk only. Some things are better found out by yourself. |
+| Crouch | `Enabled` / `FootPokesPerCrouch` / `StaySeconds` | `true` / `5` / `10` | One of Akipo's reactions to sole pokes in free roam |
+| Stomp | `Enabled` / `AtLevel` | `true` / `3` | Another one, from this mood on |
+| Growth | `Enabled` | `true` | Some things are better found out by yourself. |
 | Growth | `ThighPokesPerGrowth` / `MaxMeters` / `ShrinkDelaySeconds` / `DestroyWhenGrown` | `18` / `0` / `3` / `true` | …and these belong to it (`MaxMeters` `0` = the game's own size setting) |
 | Personality | `AffectionPatience` | `1.0` | How much affection increases patience, `0` = ignore affection |
 | Personality | `FondAffection` | `0.8` | Affection (0..1) from which Red enjoys chest pokes |

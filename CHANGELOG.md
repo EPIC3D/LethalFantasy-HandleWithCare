@@ -7,14 +7,12 @@ Tested against LethalFantasy beta 1.0.3.
 **Lobby**
 
 - With a specific minor perk chosen, there is a new hidden feature.
-- Akipo crouches down after a few playful sole pokes, and stomps her foot when
-  the tickling gets too much.
+- Akipo has a few new reactions when you tease her feet.
 
 **Punishment**
 
-- When she has had enough, she no longer closes the game – the punishment has
-  changed, with measurable consequences. Find out for yourself
-  (`[Drop] Mode = Classic` brings back the old one).
+- The punishment has changed, with measurable consequences.
+  (`[Drop] Mode = Classic` brings back the old one.)
 - She no longer picks you up when you tease her in free roam
   (`[Free] PickupAtLevel`, now off by default).
 - Her anger fades more slowly (`[Mood] CalmDownDelay` / `CalmDownPerSecond`).
